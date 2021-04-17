@@ -1,0 +1,62 @@
+version: "3.7"
+services:
+  drf:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    image: localhost:5000/tony/tr3ll0_backend
+    stop_signal: SIGTERM
+    network_mode: host
+    volumes:
+      - type: bind
+        source: ./backend
+        target: /app
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      update_config:
+        order: stop-first
+
+    working_dir: /app
+    command: python manage.py runserver
+  react:
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
+    image: localhost:5000/tony/tr3ll0_frontend
+    stop_signal: SIGTERM
+    network_mode: host
+    volumes:
+      - type: bind
+        source: ./frontend/
+        target: /app
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      update_config:
+        order: stop-first
+
+    working_dir: /app
+    command: "npm start"
+  db:
+    image: postgres
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
